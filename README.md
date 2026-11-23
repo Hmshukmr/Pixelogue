@@ -1,7 +1,3 @@
 # Pixelogue website
 
-Static site: one `index.html`, no build step.
-
-Deploy on Render (free): New > Static Site > connect this repository.
-Build command: leave empty. Publish directory: `.`
-Or New > Blueprint, which reads `render.yaml`.
+Pixelogue scans any website and turns its scattered colours, fonts, spacing and components into a clean design system you can export as CSS variables, JSON or a Tailwind config.
