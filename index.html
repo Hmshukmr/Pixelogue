@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixelogue</title>
+<meta name="description" content="Pixelogue scans any website and turns its scattered styles into a clean, exportable design system.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Geist:wght@300..700&family=Fira+Code:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@11.11.13/dist/motion.js"></script>
+<style>
+/* Layout concept: a routed, multi-page product site over a live pixel-gradient field (canvas) with film grain.
+   Glass surfaces float on the field; inspector overlays are the motif; GSAP drives page transitions and marquees,
+   Motion drives scroll reveals, counters and spring micro-interactions. */
+:root{
+  --bg:#F4F6FC; --surface:#FFFFFF; --glass:color-mix(in srgb, #FFFFFF 80%, transparent); --glass-strong:color-mix(in srgb, #FFFFFF 92%, transparent);
+  --ink:#0B1129; --muted:#3D4766; --faint:#5B6482; --line:#D8DDEA; --line-strong:#B3BCD3;
+  --accent:#3B4CFF; --accent-2:#0E8FA6; --accent-ink:#FFFFFF; --tint:#E7EAFF;
+  --px-a:#3B4CFF; --px-b:#2BB8D6; --px-c:#7B6BFF; --px-d:#4F8BFF; --px-o:.46; --grain:.05;
+  --au-1:rgba(59,76,255,.26); --au-2:rgba(43,184,214,.22); --au-3:rgba(123,107,255,.24); --au-4:rgba(79,139,255,.18);
+  --good:#18794E; --warn:#935600; --bad:#C2312A; --good-bg:#E2F4EA; --warn-bg:#FFF2D4; --bad-bg:#FDE6E4;
+  --deep:#0F1538; --deep-ink:#F1F3FF; --deep-muted:#B4BCDE; --deep-line:#2C3569;
+  --w1:#0E1430; --w2:#1D2550; --w3:#2C3566; --w4:#3B4CFF; --w5:#5562E8;
+  --shadow:0 1px 1px rgba(15,21,48,.04), 0 30px 70px -30px rgba(35,45,120,.32);
+
+  --f-display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --f-body:"Geist", "Segoe UI", system-ui, sans-serif;
+  --f-code:"Fira Code", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --t-xs:.8125rem; --t-sm:.9rem; --t-md:1rem; --t-lg:clamp(1.0625rem,.98rem + .35vw,1.25rem);
+  --t-xl:clamp(1.3rem,1.1rem + .7vw,1.65rem); --t-2xl:clamp(2.2rem,1.3rem + 3.6vw,4.4rem);
+  --t-hero:clamp(3rem,1.3rem + 6.6vw,7rem); --t-mega:clamp(3.5rem,2rem + 7vw,8.5rem);
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px; --s-8:64px; --s-9:96px; --s-10:128px;
+  --wrap:1240px; --r-pill:999px; --r-tile:26px; --r-win:20px; --r-chip:8px;
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#090D20; --surface:#131A35; --glass:color-mix(in srgb, #131A35 80%, transparent); --glass-strong:color-mix(in srgb, #131A35 92%, transparent);
+  --ink:#F3F5FF; --muted:#B9C0DC; --faint:#9BA4C4; --line:#242D52; --line-strong:#36407A;
+  --accent:#8492FF; --accent-2:#45C9DB; --accent-ink:#0A0E22; --tint:#1E2650;
+  --px-a:#4A5BFF; --px-b:#1FA7C4; --px-c:#7C66FF; --px-d:#3F7BFF; --px-o:.4; --grain:.07;
+  --au-1:rgba(74,91,255,.32); --au-2:rgba(31,167,196,.24); --au-3:rgba(124,102,255,.28); --au-4:rgba(63,123,255,.2);
+  --good:#4CC38A; --warn:#F4B84C; --bad:#FF8A80; --good-bg:#11372A; --warn-bg:#3A2C10; --bad-bg:#3E1818;
+  --deep:#141C46; --deep-ink:#EEF1FF; --deep-muted:#AAB3DA; --deep-line:#323C78;
+  --w1:#EEF1FF; --w2:#D4D9F2; --w3:#BEC5E6; --w4:#8492FF; --w5:#9AA5FF;
+  --shadow:0 1px 1px rgba(0,0,0,.25), 0 30px 70px -30px rgba(0,0,0,.65);
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#090D20; --surface:#131A35; --glass:color-mix(in srgb, #131A35 80%, transparent); --glass-strong:color-mix(in srgb, #131A35 92%, transparent);
+  --ink:#F3F5FF; --muted:#B9C0DC; --faint:#9BA4C4; --line:#242D52; --line-strong:#36407A;
+  --accent:#8492FF; --accent-2:#45C9DB; --accent-ink:#0A0E22; --tint:#1E2650;
+  --px-a:#4A5BFF; --px-b:#1FA7C4; --px-c:#7C66FF; --px-d:#3F7BFF; --px-o:.4; --grain:.07;
+  --au-1:rgba(74,91,255,.32); --au-2:rgba(31,167,196,.24); --au-3:rgba(124,102,255,.28); --au-4:rgba(63,123,255,.2);
+  --good:#4CC38A; --warn:#F4B84C; --bad:#FF8A80; --good-bg:#11372A; --warn-bg:#3A2C10; --bad-bg:#3E1818;
+  --deep:#141C46; --deep-ink:#EEF1FF; --deep-muted:#AAB3DA; --deep-line:#323C78;
+  --w1:#EEF1FF; --w2:#D4D9F2; --w3:#BEC5E6; --w4:#8492FF; --w5:#9AA5FF;
+  --shadow:0 1px 1px rgba(0,0,0,.25), 0 30px 70px -30px rgba(0,0,0,.65);
+  color-scheme:dark }
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:var(--t-md);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,h4{font-family:var(--f-display);line-height:1.02;letter-spacing:-.028em;margin:0;text-wrap:balance;font-optical-sizing:auto;overflow-wrap:break-word;min-width:0}
+p,li,dd,summary{text-wrap:pretty}
+p{margin:0}
+h1,h2,h3,.lede{hyphens:manual}
+.hero h1{text-wrap:balance}
+a{color:inherit}
+code,pre{font-family:var(--f-code);font-variant-ligatures:contextual}
+::selection{background:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* background: live pixel field + grain */
+.aurora{position:fixed;inset:-20%;z-index:-3;pointer-events:none;filter:blur(60px);
+  background:radial-gradient(30% 28% at 15% 20%, var(--au-1), transparent 70%),radial-gradient(28% 26% at 85% 15%, var(--au-2), transparent 70%),
+             radial-gradient(34% 30% at 70% 80%, var(--au-3), transparent 70%),radial-gradient(24% 22% at 20% 85%, var(--au-4), transparent 70%);
+  animation:aurora 28s ease-in-out infinite alternate}
+@keyframes aurora{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}50%{transform:translate3d(4%,-3%,0) rotate(6deg) scale(1.08)}100%{transform:translate3d(-4%,3%,0) rotate(-5deg) scale(1.04)}}
+#pixels{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;opacity:var(--px-o)}
+.veil{position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(120% 80% at 50% 0%, transparent 40%, var(--bg) 92%)}
+body::after{content:"";position:fixed;inset:0;z-index:50;pointer-events:none;opacity:var(--grain);mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+.wrap{max-width:var(--wrap);margin-inline:auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+@media (min-width:720px){ .wrap{padding-left:max(32px, env(safe-area-inset-left, 0px));padding-right:max(32px, env(safe-area-inset-right, 0px))} }
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(20px) saturate(1.35);backdrop-filter:blur(20px) saturate(1.35);box-shadow:inset 0 0 0 1px var(--line), var(--shadow)}
+.lede{font-size:var(--t-lg);color:var(--muted);max-width:46ch;line-height:1.55;font-weight:400}
+.h2{font-size:var(--t-2xl);font-weight:800;max-width:17ch}
+.band{padding-block:var(--s-9)}
+
+/* buttons */
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.6rem;min-height:50px;padding:0 1.5rem;border-radius:var(--r-pill);
+  font:600 var(--t-md)/1 var(--f-body);letter-spacing:-.005em;border:0;cursor:pointer;text-decoration:none;white-space:nowrap;
+  transition:box-shadow .3s var(--ease), background .3s var(--ease), color .3s}
+.btn svg{transition:transform .35s var(--ease)}
+.btn:hover svg{transform:translateX(3px)}
+.btn-primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 12px 30px -12px color-mix(in srgb, var(--accent) 75%, transparent), inset 0 1px 0 color-mix(in srgb, #fff 25%, transparent)}
+.btn-primary:hover{box-shadow:0 18px 36px -12px color-mix(in srgb, var(--accent) 80%, transparent), inset 0 1px 0 color-mix(in srgb, #fff 25%, transparent)}
+.btn-ghost{background:var(--glass);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line-strong);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.btn-ghost:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.btn:active{transform:scale(.97)}
+.btn-text{background:none;border:0;color:var(--accent);font:600 var(--t-sm) var(--f-body);cursor:pointer;padding:.4rem .2rem;min-height:44px}
+
+/* nav */
+header.top{position:sticky;top:env(safe-area-inset-top, 0px);z-index:40;padding-top:var(--s-4)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:60;background:var(--bg)}
+.navbar{display:flex;align-items:center;gap:var(--s-4);min-height:64px;padding:0 var(--s-3) 0 var(--s-5);border-radius:var(--r-pill)}
+.brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;font:800 1.35rem/1 var(--f-display);letter-spacing:-.02em}
+.mark{display:grid;grid-template-columns:repeat(3,7px);gap:2px}
+.mark i{width:7px;height:7px;border-radius:1.5px;background:var(--accent)}
+.mark i:nth-child(2),.mark i:nth-child(6){background:var(--accent-2)}
+.mark i.o{background:transparent}
+.links{position:relative;display:flex;gap:2px;list-style:none;margin:0 0 0 auto;padding:4px;border-radius:var(--r-pill)}
+.links a{position:relative;z-index:1;display:inline-flex;align-items:center;min-height:40px;padding:0 .95rem;border-radius:var(--r-pill);text-decoration:none;color:var(--muted);font-weight:500;font-size:var(--t-sm);transition:color .25s}
+.links a:hover{color:var(--ink)}
+.links a[aria-current="page"]{color:var(--ink)}
+.indicator{position:absolute;z-index:0;top:4px;left:0;height:40px;width:0;border-radius:var(--r-pill);background:var(--glass-strong);box-shadow:inset 0 0 0 1px var(--line), 0 6px 16px -8px rgba(20,30,90,.25);opacity:0}
+.navbar .btn{min-height:44px;padding:0 1.15rem;font-size:var(--t-sm)}
+.menu-btn{display:none;margin-left:auto;width:44px;height:44px;border-radius:50%;border:0;background:var(--tint);color:var(--ink);cursor:pointer;align-items:center;justify-content:center}
+.mobile-menu{display:none}
+@media (max-width:980px){
+  .links,.navbar > .btn{display:none}
+  .menu-btn{display:inline-flex}
+  .mobile-menu[data-open="true"]{display:grid;gap:4px;margin-top:var(--s-2);padding:var(--s-3);border-radius:var(--r-tile)}
+  .mobile-menu a{display:flex;align-items:center;min-height:48px;padding:0 var(--s-4);border-radius:14px;text-decoration:none;font-weight:500}
+  .mobile-menu a[aria-current="page"]{background:var(--tint)}
+}
+
+/* views */
+.view{display:block}
+.view[hidden],#ctaBand[hidden]{display:none}
+.ph{padding-block:var(--s-9) var(--s-7);display:grid;gap:var(--s-5)}
+@media (min-width:960px){ .ph{grid-template-columns:1.3fr 1fr;align-items:end} }
+.ph h1{font-size:var(--t-2xl);font-weight:800;max-width:16ch;line-height:1}
+.word-mask{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.06em;margin-bottom:-.06em}
+.word-mask > span{display:inline-block}
+
+/* hero */
+.hero{position:relative;padding-block:var(--s-9) 0}
+.hero::before{content:"";position:absolute;inset:0 0 auto 0;height:min(760px,100%);z-index:-1;pointer-events:none;background:radial-gradient(70% 60% at 28% 28%, color-mix(in srgb, var(--bg) 88%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 45%, transparent 75%)}
+.hero h1{font-size:var(--t-hero);font-weight:800;letter-spacing:-.045em;line-height:.92;max-width:14ch}
+.word{position:relative;display:inline-block;transition:color .9s var(--ease), font-weight .9s var(--ease), letter-spacing .9s var(--ease), transform .9s var(--ease)}
+.word.a{color:var(--w1);font-weight:800}
+.word.b{color:var(--w2);font-weight:660;letter-spacing:-.015em}
+.word.c{color:var(--w3);font-weight:740;transform:translateY(.035em)}
+.word.d{color:var(--w4);font-weight:620;letter-spacing:-.055em}
+.word.e{color:var(--w5);font-weight:800;transform:translateY(-.03em)}
+.snapped .word{color:var(--ink);font-weight:800;letter-spacing:-.045em;transform:none}
+.inspect::after{content:"";position:absolute;inset:-.06em -.12em;border:1.5px dashed var(--accent);border-radius:6px;
+  background:color-mix(in srgb, var(--accent) 9%, transparent);box-shadow:0 0 0 .2em color-mix(in srgb, var(--accent-2) 14%, transparent);transition:opacity .6s var(--ease)}
+.snapped .inspect::after{opacity:1;border-color:var(--accent);animation:edge 2.4s ease-in-out .6s infinite}
+@keyframes edge{0%,100%{box-shadow:0 0 0 .2em color-mix(in srgb, var(--accent-2) 14%, transparent)}50%{box-shadow:0 0 0 .32em color-mix(in srgb, var(--accent) 22%, transparent), 0 0 30px color-mix(in srgb, var(--accent) 30%, transparent)}}
+.tag{position:absolute;left:-.12em;bottom:calc(100% + .32em);font:500 .8rem/1 var(--f-code);letter-spacing:0;white-space:nowrap;
+  background:var(--ink);color:var(--bg);padding:.45rem .6rem;border-radius:var(--r-chip);pointer-events:none;transition:background .6s}
+.tag{transition:background .5s, opacity .4s, transform .4s}
+.tag .after{display:none}
+.snapped .tag{background:var(--accent);color:var(--accent-ink);animation:glow 2.4s ease-in-out .6s infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent), 0 0 14px 2px color-mix(in srgb, var(--accent) 35%, transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent), 0 0 28px 8px color-mix(in srgb, var(--accent) 55%, transparent)}}
+.snapped .tag .before{display:none}
+.snapped .tag .after{display:inline}
+.inspector{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .9rem;margin-top:var(--s-5);font-size:var(--t-sm);color:var(--muted)}
+.replay{display:inline-flex;align-items:center;gap:.4rem}
+.hero-row{display:grid;gap:var(--s-6);margin-top:var(--s-7)}
+@media (min-width:960px){ .hero-row{grid-template-columns:minmax(0,1fr) auto;align-items:end} }
+.ctas{display:flex;flex-wrap:wrap;gap:var(--s-3)}
+
+/* product preview */
+.preview-wrap{position:relative;margin-top:var(--s-8);perspective:1800px}
+.preview-glow{position:absolute;inset:6% 4% -6%;z-index:-1;border-radius:48px;filter:blur(70px);opacity:.75;background:conic-gradient(from 120deg, var(--px-a), var(--px-b), var(--px-c), var(--px-a))}
+.preview{transform-origin:50% 0}
+.window{border-radius:var(--r-win);overflow:hidden;min-width:0}
+.win-bar{display:flex;align-items:center;gap:.9rem;padding:.8rem 1rem;border-bottom:1px solid var(--line)}
+.win-bar .url{flex:1;min-width:0;background:color-mix(in srgb, var(--bg) 70%, transparent);border-radius:var(--r-pill);padding:.4rem .95rem;font:400 .8rem var(--f-code);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app{display:grid;grid-template-columns:200px minmax(0,1fr);background:color-mix(in srgb, var(--surface) 55%, transparent)}
+.rail{border-right:1px solid var(--line);padding:var(--s-4) var(--s-3);display:grid;align-content:start;gap:3px}
+.rail span{display:flex;align-items:center;gap:.6rem;font-size:.84rem;padding:.5rem .75rem;border-radius:var(--r-pill);color:var(--muted)}
+.rail span.on{background:var(--tint);color:var(--ink);font-weight:600}
+.rail span b{margin-left:auto;font:600 .7rem var(--f-body);background:var(--bad-bg);color:var(--bad);border-radius:var(--r-pill);padding:.05rem .45rem}
+.app-main{padding:var(--s-4);display:grid;gap:var(--s-4);grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);min-width:0}
+.scores{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--s-3)}
+.score{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:.8rem .5rem;display:grid;justify-items:center;gap:.35rem;font-size:.78rem;color:var(--muted)}
+.score svg{width:64px;height:64px}
+.ring{stroke-dasharray:0 164}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:var(--s-4);min-width:0}
+.panel h4{margin:0 0 .75rem;font:600 .9rem var(--f-body);letter-spacing:0;display:flex;justify-content:space-between;gap:.5rem}
+.panel h4 span{font-weight:400;color:var(--faint)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem}
+.tok{display:flex;align-items:center;gap:.45rem;border:1px solid var(--line);border-radius:var(--r-pill);padding:.22rem .65rem .22rem .25rem;font:400 .74rem var(--f-code)}
+.tok i{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent)}
+.issues{display:grid}
+.issue{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:.75rem;align-items:center;min-height:44px;padding-block:.5rem;border-top:1px solid var(--line)}
+.issue:first-child{border-top:0}
+.issue .ttl{font:500 .84rem/1.3 var(--f-body);color:var(--ink);min-width:0}
+.issue .ev{font:500 .78rem/1 var(--f-display);letter-spacing:-.005em;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+@media (max-width:560px){ .issue{grid-template-columns:76px minmax(0,1fr)} .issue .ev{grid-column:2;text-align:left} }
+.pill{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-pill);padding:.2rem .6rem;font:600 .72rem/1.2 var(--f-body);white-space:nowrap}
+.issue .pill{width:76px}
+.p-bad{background:var(--bad-bg);color:var(--bad)}.p-warn{background:var(--warn-bg);color:var(--warn)}.p-ok{background:var(--good-bg);color:var(--good)}
+@media (max-width:980px){ .app{grid-template-columns:1fr} .rail{display:none} .app-main{grid-template-columns:1fr} .scores{grid-template-columns:repeat(3,minmax(0,1fr))} .score:nth-child(n+4){display:none} }
+
+/* marquees */
+.marquee{position:relative;overflow:hidden;-webkit-mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)}
+.track{display:flex;width:max-content;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+.track > ul{display:flex;align-items:center;list-style:none;margin:0;padding:0}
+.css-loop .track{animation:loop var(--dur,40s) linear infinite}
+.css-loop[data-dir="-1"] .track{animation-direction:reverse}
+@keyframes loop{to{transform:translateX(-50%)}}
+.m-tokens{padding-block:var(--s-7) var(--s-5)}
+.m-tokens li{display:inline-flex;align-items:center;gap:.6rem;margin-right:var(--s-3);padding:.5rem 1rem .5rem .5rem;border-radius:var(--r-pill);background:var(--glass);box-shadow:inset 0 0 0 1px var(--line);font:400 .85rem var(--f-code);white-space:nowrap}
+.m-tokens li i{width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent)}
+.m-tokens li span{color:var(--faint)}
+.m-words{padding-block:var(--s-6)}
+.m-words li{display:inline-flex;align-items:center;gap:var(--s-7);margin-right:var(--s-7);font:800 var(--t-mega)/1 var(--f-display);letter-spacing:-.05em;white-space:nowrap}
+.m-words li.out{color:transparent;-webkit-text-stroke:1.5px var(--line-strong)}
+.m-words li::after{content:"";width:.28em;height:.28em;background:var(--accent);border-radius:4px;transform:rotate(45deg)}
+.m-stack li{margin-right:var(--s-8);font:700 clamp(1.1rem,.9rem + .8vw,1.6rem)/1 var(--f-display);letter-spacing:-.01em;color:var(--faint);white-space:nowrap}
+.m-stack{padding-block:var(--s-5);border-block:1px solid var(--line)}
+
+/* spotlight link cards (home) */
+.teasers{display:grid;gap:var(--s-4)}
+@media (min-width:760px){ .teasers{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (min-width:1100px){ .teasers{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.spot{position:relative;overflow:hidden;display:grid;gap:var(--s-4);align-content:start;padding:var(--s-6);border-radius:var(--r-tile);text-decoration:none;min-height:240px;
+  --mx:50%;--my:50%}
+.spot::before{content:"";position:absolute;inset:0;opacity:0;transition:opacity .35s var(--ease);pointer-events:none;
+  background:radial-gradient(380px circle at var(--mx) var(--my), color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%)}
+.spot:hover::before{opacity:1}
+.spot > *{position:relative}
+.spot h3{font-size:var(--t-xl);font-weight:700}
+.spot p{color:var(--muted)}
+.spot .go{margin-top:auto;display:inline-flex;align-items:center;gap:.5rem;color:var(--accent);font-weight:600;font-size:var(--t-sm)}
+.spot .go svg{transition:transform .35s var(--ease)}
+.spot:hover .go svg{transform:translateX(4px)}
+.spot .ico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--tint);color:var(--accent)}
+
+/* features bento */
+.bento{display:grid;gap:var(--s-4);grid-template-columns:repeat(12,minmax(0,1fr))}
+.tile{grid-column:span 12;border-radius:var(--r-tile);padding:clamp(1.4rem,2.4vw,2.1rem);display:grid;gap:var(--s-4);align-content:start;min-width:0;position:relative;overflow:hidden}
+.tile h3{font-size:var(--t-xl);font-weight:700}
+.tile p{color:var(--muted);max-width:46ch}
+@media (min-width:760px){ .tile{grid-column:span 6} }
+@media (min-width:1100px){ .t-colour{grid-column:span 7;grid-row:span 2} .t-contrast{grid-column:span 5} .t-type,.t-space,.t-comp{grid-column:span 4} .t-drift{grid-column:span 5} .t-ai{grid-column:span 7} }
+@media (min-width:760px) and (max-width:1099px){ .t-colour,.t-ai{grid-column:span 12} }
+.cluster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s-4)}
+.grp{display:grid;gap:.6rem;justify-items:start}
+.raw{display:flex;flex-wrap:wrap;gap:4px;min-height:46px}
+.raw i{width:20px;height:20px;border-radius:6px}
+.tokb{width:100%;aspect-ratio:1.4;max-width:120px;border-radius:14px;display:flex;align-items:flex-end;padding:.5rem;font:500 .72rem var(--f-code);color:#fff;box-shadow:inset 0 0 0 1px color-mix(in srgb, #000 10%, transparent)}
+.tokb.lt{color:#0E1430}
+@media (max-width:560px){ .cluster{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.chip-code{display:inline-flex;align-items:center;gap:.4rem;font:500 .78rem var(--f-code);padding:.3rem .7rem;border-radius:var(--r-pill);background:var(--tint);color:var(--ink);justify-self:start}
+.contrast{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)}
+.cbox{border-radius:16px;padding:var(--s-4);display:grid;gap:.6rem;min-height:132px;align-content:space-between;background:#FFFFFF;box-shadow:inset 0 0 0 1px var(--line)}
+.cbox .aa{font:700 2rem/1 var(--f-display)}
+.typescale{display:grid;gap:var(--s-2)}
+.typescale div{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;border-bottom:1px dashed var(--line);padding-bottom:.4rem;white-space:nowrap;overflow:hidden}
+.typescale code{font-size:.74rem;color:var(--faint);flex:none}
+.typescale .off{color:var(--warn)}
+.bars{display:grid;gap:var(--s-2)}
+.bars div{display:grid;grid-template-columns:48px 1fr;align-items:center;gap:.7rem;font:400 .74rem var(--f-code);color:var(--faint)}
+.bars span{height:12px;border-radius:4px;background:var(--accent);transform-origin:left}
+.bars .off span{background:var(--warn)}
+.btnrow{display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center}
+.btnrow span{display:inline-flex;align-items:center;min-height:38px;padding:0 1rem;background:var(--accent);color:var(--accent-ink);font:600 .82rem var(--f-body)}
+.pages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s-3)}
+.pg{border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);padding:.7rem;display:grid;gap:.45rem}
+.pg i{display:block;height:6px;border-radius:3px;background:var(--line)}
+.pg i.w6{width:60%}.pg i.w8{width:85%}
+.pg b{justify-self:start;margin-top:.2rem;width:58px;height:20px;background:var(--accent)}
+.pg code{font-size:.68rem;color:var(--faint)}
+.pg.odd{box-shadow:inset 0 0 0 1.5px var(--bad)}
+.ai{display:grid;gap:.7rem;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);padding:var(--s-4)}
+.ai p{color:var(--ink);max-width:none}
+.ai ol{margin:0;padding-left:1.2rem;display:grid;gap:.35rem;color:var(--muted)}
+.ai .meta{display:flex;flex-wrap:wrap;gap:.5rem}
+
+/* steps + evidence */
+.steps{position:relative;list-style:none;margin:0;padding:0;display:grid;gap:var(--s-5)}
+@media (min-width:900px){ .steps{grid-template-columns:repeat(4,minmax(0,1fr))} .steps::before{content:"";position:absolute;left:30px;right:30px;top:29px;height:2px;background:var(--line)} }
+.progress{display:none}
+@media (min-width:900px){ .progress{display:block;position:absolute;left:30px;right:30px;top:29px;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transform-origin:left} }
+.step{position:relative;display:grid;gap:var(--s-3);align-content:start}
+.step .n{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;font:800 1.4rem var(--f-display);background:var(--glass-strong);box-shadow:inset 0 0 0 1px var(--line), var(--shadow);color:var(--accent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.step h3{font-size:var(--t-xl);font-weight:700}
+.step p{color:var(--muted)}
+.evidence{display:grid;gap:var(--s-7);margin-top:var(--s-9)}
+@media (min-width:1000px){ .evidence{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:center} }
+.checks{list-style:none;margin:var(--s-6) 0 0;padding:0;display:grid;gap:var(--s-4)}
+.checks li{display:grid;grid-template-columns:28px 1fr;gap:.8rem;align-items:start;color:var(--muted)}
+.checks b{color:var(--ink);font-weight:600}
+.checks svg{color:var(--accent);margin-top:2px}
+.ic-head{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem 1rem;padding:var(--s-4) var(--s-5);border-bottom:1px solid var(--line)}
+.ic-head h3{font-size:1.15rem;font-weight:700;letter-spacing:-.01em;flex:1;min-width:12rem}
+.ic-body{display:grid;gap:var(--s-5);padding:var(--s-5)}
+@media (min-width:600px){ .ic-body{grid-template-columns:200px minmax(0,1fr)} }
+.crop{border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);display:grid;place-items:center;gap:.6rem;padding:1.2rem;align-content:center;min-height:150px}
+.crop span{background:var(--accent);color:var(--accent-ink);font:600 .85rem var(--f-body);padding:.7rem 1.2rem;border-radius:4px;outline:1.5px dashed var(--bad);outline-offset:6px}
+.crop small{color:var(--faint);font-size:.75rem}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.55rem 1.2rem;font-size:var(--t-sm);align-content:start;margin:0}
+.kv dt{color:var(--faint)}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.kv code{font-size:.8rem}
+.found{color:var(--bad)}.want{color:var(--good)}
+.ic-actions{display:flex;flex-wrap:wrap;gap:.6rem;padding:0 var(--s-5) var(--s-5)}
+.ic-actions .btn{min-height:42px;font-size:var(--t-sm)}
+
+/* case studies */
+.cases{display:grid;gap:var(--s-4)}
+@media (min-width:720px){ .cases{grid-template-columns:repeat(2,minmax(0,1fr))} .case.feature{grid-column:span 2} }
+@media (min-width:1100px){ .cases{grid-template-columns:repeat(4,minmax(0,1fr))} .case.feature{grid-column:span 2;grid-row:span 2} }
+.case{border-radius:var(--r-tile);padding:var(--s-6);display:grid;gap:var(--s-4);align-content:start;min-width:0}
+.case .kind{font-size:var(--t-sm);color:var(--faint)}
+.case h3{font-size:var(--t-xl);font-weight:700}
+.case.feature{position:relative;overflow:hidden;background:var(--deep);color:var(--deep-ink);box-shadow:var(--shadow);padding:clamp(1.6rem,3vw,2.6rem);gap:var(--s-5)}
+.case.feature::before{content:"";position:absolute;inset:auto -20% -40% 30%;height:80%;background:radial-gradient(closest-side, color-mix(in srgb, var(--accent) 45%, transparent), transparent);pointer-events:none}
+.case.feature > *{position:relative}
+.case.feature .kind{color:var(--deep-muted)}
+.case.feature h3{font-size:clamp(2rem,1.4rem + 2.2vw,3.2rem);font-weight:800}
+.strip{display:flex;height:34px;border-radius:10px;overflow:hidden}
+.strip i{flex:1}
+.after-strip{display:flex;flex-wrap:wrap;gap:6px}
+.after-strip i{width:34px;height:34px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.figs{display:flex;flex-wrap:wrap;gap:var(--s-4) var(--s-6)}
+.fig{display:grid;gap:.15rem}
+.fig b{font:800 2rem/1 var(--f-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.case.feature .fig b{font-size:clamp(2.2rem,1.6rem + 1.6vw,3.2rem)}
+.fig span{font-size:var(--t-sm);color:var(--faint)}
+.case.feature .fig span{color:var(--deep-muted)}
+.specimen{border-top:1px solid var(--deep-line);padding-top:var(--s-5);display:grid;gap:.55rem}
+.specimen div{display:flex;align-items:baseline;gap:1rem;overflow:hidden;white-space:nowrap}
+.specimen code{flex:none;width:5.5rem;font-size:.75rem;color:var(--deep-muted)}
+.finding{font-size:var(--t-sm);color:var(--muted);border-top:1px dashed var(--line);padding-top:.85rem}
+.case.feature .finding{color:var(--deep-muted);border-color:var(--deep-line)}
+.disclaim{font-size:var(--t-sm);color:var(--faint);margin-top:var(--s-5)}
+
+/* export */
+.export{display:grid;gap:var(--s-7)}
+@media (min-width:1000px){ .export{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:start} }
+.formats{list-style:none;margin:0;padding:0;display:grid}
+.formats li{display:grid;grid-template-columns:7rem 1fr;gap:var(--s-4);align-items:baseline;padding:var(--s-4) 0;border-top:1px solid var(--line)}
+.formats li:last-child{border-bottom:1px solid var(--line)}
+.formats b{font-family:var(--f-display);font-size:1.2rem}
+.formats span{color:var(--muted)}
+.code-card{position:relative;background:var(--deep);color:var(--deep-ink);border-radius:var(--r-win);overflow:hidden;min-width:0;box-shadow:var(--shadow)}
+.code-card::before{content:"";position:absolute;inset:-30% -10% auto 40%;height:70%;background:radial-gradient(closest-side, color-mix(in srgb, var(--accent-2) 30%, transparent), transparent);pointer-events:none}
+.tabs{position:relative;display:flex;flex-wrap:wrap;gap:4px;padding:var(--s-3);border-bottom:1px solid var(--deep-line);align-items:center}
+.tab-ind{position:absolute;top:var(--s-3);left:0;height:40px;border-radius:var(--r-pill);background:var(--deep-ink);z-index:0}
+.tabs [role="tab"]{position:relative;z-index:1;min-height:40px;padding:0 1rem;border-radius:var(--r-pill);border:0;background:transparent;color:var(--deep-muted);font:500 var(--t-sm) var(--f-body);cursor:pointer;transition:color .3s}
+.tabs [role="tab"][aria-selected="true"]{color:var(--deep)}
+.tabs .copy{margin-left:auto;min-height:40px;padding:0 1rem;border-radius:var(--r-pill);border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px var(--deep-line);color:var(--deep-ink);font:500 var(--t-sm) var(--f-body)}
+.code-card pre{position:relative;margin:0;padding:var(--s-5) var(--s-5) var(--s-6);font:400 .875rem/1.8 var(--f-code);overflow-x:auto;tab-size:2;min-height:340px}
+.k{color:#A6B4FF}.v{color:#8EE3C8}.c{color:#7F8BB8}.p{color:#F5C77E}
+
+/* security + faq */
+.secure{display:grid;gap:var(--s-4)}
+@media (min-width:720px){ .secure{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (min-width:1100px){ .secure{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.sec{border-radius:var(--r-tile);padding:var(--s-6);display:grid;gap:var(--s-3);align-content:start}
+.sec .ico{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--tint);color:var(--accent)}
+.sec h3{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
+.sec p{color:var(--muted);font-size:var(--t-sm)}
+.faq{display:grid;gap:var(--s-6);margin-top:var(--s-9)}
+@media (min-width:1000px){ .faq{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)} }
+.qa{border-radius:var(--r-tile);overflow:hidden}
+.qa details{border-top:1px solid var(--line)}
+.qa details:first-child{border-top:0}
+.qa summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:var(--s-5) var(--s-6);font:600 var(--t-lg)/1.35 var(--f-body)}
+.qa summary::-webkit-details-marker{display:none}
+.pm{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--tint);color:var(--accent);transition:transform .4s var(--ease)}
+.qa details[open] .pm{transform:rotate(45deg)}
+.ans{padding:0 var(--s-6) var(--s-5);color:var(--muted);max-width:62ch}
+
+/* try + cta */
+.try{display:grid;gap:var(--s-6);border-radius:32px;padding:clamp(2rem,5vw,4rem)}
+@media (min-width:960px){ .try{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:center;column-gap:var(--s-8)} .try .result{grid-column:1 / -1} }
+.scan-form{display:flex;flex-wrap:wrap;gap:var(--s-3);max-width:680px}
+.field{flex:1 1 280px;display:flex;align-items:center;gap:.65rem;min-height:56px;padding:0 1.2rem;border-radius:var(--r-pill);background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--line-strong), 0 12px 30px -20px rgba(20,30,90,.35);transition:box-shadow .25s}
+.field:hover{box-shadow:inset 0 0 0 1.5px var(--muted), 0 12px 30px -20px rgba(20,30,90,.35)}
+.field:focus-within{box-shadow:inset 0 0 0 2px var(--accent), 0 0 0 5px color-mix(in srgb, var(--accent) 18%, transparent)}
+.field input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);caret-color:var(--accent);font:400 .98rem var(--f-code);outline:none}
+.field input::placeholder{color:var(--faint);opacity:1}
+.field input::selection{background:color-mix(in srgb, var(--accent) 28%, transparent);color:var(--ink)}
+.field input:-webkit-autofill,.field input:-webkit-autofill:hover,.field input:-webkit-autofill:focus{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 100px var(--surface) inset;transition:background-color 9999s}
+.field svg{flex:none;color:var(--muted)}
+.steps-log{list-style:none;margin:0;padding:0;display:grid;gap:var(--s-2);font:400 .88rem var(--f-code);color:var(--muted)}
+.steps-log li{display:flex;align-items:center;gap:.6rem}
+.steps-log li::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--line-strong);transition:background .3s}
+.steps-log li.done::before{background:var(--good)}
+.steps-log li.run::before{background:var(--accent)}
+.result{display:grid;gap:var(--s-4)}
+.result[hidden]{display:none!important}
+.result .chips{gap:var(--s-2)}
+.result .tok{font-size:.8rem;padding:.35rem .8rem .35rem .3rem;background:var(--surface)}
+.note{font-size:var(--t-sm);color:var(--faint)}
+.cta{position:relative;overflow:hidden;border-radius:32px;background:var(--deep);color:var(--deep-ink);padding:clamp(2.5rem,6vw,5rem);display:grid;gap:var(--s-6)}
+@media (min-width:960px){ .cta{grid-template-columns:minmax(0,1fr) auto;column-gap:var(--s-8);align-items:end} .cta h2{grid-column:1 / -1} }
+.cta::before{content:"";position:absolute;inset:-40% -20% auto auto;width:70%;height:120%;background:radial-gradient(closest-side, color-mix(in srgb, var(--accent) 50%, transparent), transparent);pointer-events:none}
+.cta::after{content:"";position:absolute;inset:auto auto -50% -10%;width:60%;height:100%;background:radial-gradient(closest-side, color-mix(in srgb, var(--accent-2) 35%, transparent), transparent);pointer-events:none}
+.cta > *{position:relative}
+.cta h2{font-size:clamp(2.3rem,1rem + 4.6vw,4.9rem);font-weight:800;letter-spacing:-.045em;line-height:.98;max-width:none}
+.cta h2 span{display:block;text-wrap:balance}
+@media (min-width:900px){ .cta h2 span{white-space:nowrap} }
+.cta .lede{color:var(--deep-muted)}
+.cta .btn-ghost{background:transparent;color:var(--deep-ink);box-shadow:inset 0 0 0 1.5px var(--deep-line)}
+.cta .btn-ghost:hover{box-shadow:inset 0 0 0 1.5px var(--deep-ink)}
+
+footer{padding-block:var(--s-8) var(--s-6)}
+.foot{display:grid;gap:var(--s-6)}
+@media (min-width:800px){ .foot{grid-template-columns:1.4fr repeat(2, minmax(0,.6fr));align-items:start} }
+.foot p{color:var(--muted);max-width:32ch;margin-top:var(--s-3)}
+.foot h4{font:600 var(--t-sm) var(--f-body);letter-spacing:0;margin-bottom:var(--s-3)}
+.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--s-2)}
+.foot ul a{color:var(--muted);text-decoration:none;font-size:var(--t-sm);transition:color .2s}
+.foot ul a:hover{color:var(--ink)}
+.legal{margin-top:var(--s-7);padding-top:var(--s-5);border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;color:var(--faint);font-size:var(--t-xs)}
+
+
+/* cursor follower */
+.cursor-ring,.cursor-dot{position:fixed;left:0;top:0;z-index:70;pointer-events:none;border-radius:50%;opacity:0;transition:opacity .3s, width .35s var(--ease), height .35s var(--ease), margin .35s var(--ease), background .3s, border-color .3s}
+.cursor-ring{width:38px;height:38px;margin:-19px 0 0 -19px;border:1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);background:color-mix(in srgb, var(--accent) 6%, transparent);backdrop-filter:saturate(1.4)}
+.cursor-dot{width:6px;height:6px;margin:-3px 0 0 -3px;background:var(--accent)}
+.cursor-on .cursor-ring,.cursor-on .cursor-dot{opacity:1}
+.cursor-hover .cursor-ring{width:64px;height:64px;margin:-32px 0 0 -32px;background:color-mix(in srgb, var(--accent) 12%, transparent);border-color:var(--accent)}
+.cursor-hover .cursor-dot{opacity:0}
+.cursor-text .cursor-ring{width:4px;height:28px;margin:-14px 0 0 -2px;border-radius:2px;background:var(--accent);border-color:transparent}
+.cursor-down .cursor-ring{width:30px;height:30px;margin:-15px 0 0 -15px}
+@media (pointer: coarse){ .cursor-ring,.cursor-dot{display:none} }
+
+@media (prefers-reduced-motion: reduce){
+  .cursor-ring,.cursor-dot{display:none}
+  .aurora{animation:none}
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .ring{stroke-dasharray:var(--dash) 164}
+  .marquee .track{transform:none!important}
+  .marquee{overflow-x:auto}
+}
+</style>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+<canvas id="pixels" aria-hidden="true"></canvas>
+<div class="cursor-ring" id="cRing" aria-hidden="true"></div><div class="cursor-dot" id="cDot" aria-hidden="true"></div>
+<div class="veil" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="wrap">
+    <nav class="navbar glass" aria-label="Main">
+      <a class="brand" href="#home" aria-label="Pixelogue home">
+        <span class="mark" aria-hidden="true"><i></i><i></i><i class="o"></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i></i></span>
+        Pixelogue
+      </a>
+      <ul class="links" id="links">
+        <li class="indicator" id="indicator" aria-hidden="true"></li>
+        <li><a href="#features" data-route="features">Features</a></li>
+        <li><a href="#how" data-route="how">How it works</a></li>
+        <li><a href="#scans" data-route="scans">Demo scans</a></li>
+        <li><a href="#export" data-route="export">Export</a></li>
+        <li><a href="#security" data-route="security">Security</a></li>
+      </ul>
+      <a class="btn btn-primary" href="#try" data-route="try">Try the sample scan</a>
+      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </nav>
+    <div class="mobile-menu glass" id="mobileMenu" data-open="false">
+      <a href="#home" data-route="home">Home</a>
+      <a href="#features" data-route="features">Features</a>
+      <a href="#how" data-route="how">How it works</a>
+      <a href="#scans" data-route="scans">Demo scans</a>
+      <a href="#export" data-route="export">Export</a>
+      <a href="#security" data-route="security">Security and FAQ</a>
+      <a href="#try" data-route="try">Try the sample scan</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- ============ HOME ============ -->
+  <section class="view" data-view="home" aria-label="Home">
+    <div class="hero" id="hero">
+      <div class="wrap">
+        <h1 aria-label="Your website already has a design system. It's just scattered.">
+          <span class="word a" aria-hidden="true">Your</span>
+          <span class="word c inspect" aria-hidden="true">website<span class="tag"><span class="before">#2C3566 · 740</span><span class="after">color.ink · 800</span></span></span>
+          <span class="word b" aria-hidden="true">already</span>
+          <span class="word d" aria-hidden="true">has</span>
+          <span class="word e" aria-hidden="true">a</span>
+          <span class="word a" aria-hidden="true">design</span>
+          <span class="word b" aria-hidden="true">system.</span>
+          <span class="word d" aria-hidden="true">It's</span>
+          <span class="word c" aria-hidden="true">just</span>
+          <span class="word e" aria-hidden="true">scattered.</span>
+        </h1>
+        <div class="inspector" role="status">
+          <button class="btn-text replay" id="replay" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Replay the scan</button>
+        </div>
+        <div class="hero-row">
+          <p class="lede enter">Pixelogue scans your pages, finds every colour, font, spacing value and reusable component, shows where pages disagree, and hands you one consistent design system to export as CSS, JSON or Tailwind.</p>
+          <div class="ctas enter">
+            <a class="btn btn-primary magnet" href="#try">Try the sample scan <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="btn btn-ghost" href="#features">See what it finds</a>
+          </div>
+        </div>
+
+        <div class="preview-wrap">
+          <div class="preview-glow" aria-hidden="true"></div>
+          <figure class="preview window glass" id="preview" style="margin:0" aria-label="Pixelogue audit dashboard showing sample data for example-store.demo">
+            <div class="win-bar">
+              <span class="url">example-store.demo</span>
+              <span class="pill p-ok">24 pages scanned</span>
+            </div>
+            <div class="app">
+              <div class="rail" aria-hidden="true">
+                <span class="on">Overview</span><span>Colours</span><span>Typography</span><span>Spacing</span><span>Components</span><span>Issues <b>12</b></span><span>Export</span>
+              </div>
+              <div class="app-main">
+                <div class="scores">
+                  <div class="score"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="6"/><circle class="ring" style="--dash:134" cx="32" cy="32" r="26" fill="none" stroke="var(--warn)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)"/><text x="32" y="37.5" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)" font-family="Bricolage Grotesque, sans-serif">82</text></svg>Overall</div>
+                  <div class="score"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="6"/><circle class="ring" style="--dash:121" cx="32" cy="32" r="26" fill="none" stroke="var(--warn)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)"/><text x="32" y="37.5" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)" font-family="Bricolage Grotesque, sans-serif">74</text></svg>Colour</div>
+                  <div class="score"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="6"/><circle class="ring" style="--dash:149" cx="32" cy="32" r="26" fill="none" stroke="var(--good)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)"/><text x="32" y="37.5" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)" font-family="Bricolage Grotesque, sans-serif">91</text></svg>Type</div>
+                  <div class="score"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="6"/><circle class="ring" style="--dash:95" cx="32" cy="32" r="26" fill="none" stroke="var(--warn)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)"/><text x="32" y="37.5" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)" font-family="Bricolage Grotesque, sans-serif">58</text></svg>Spacing</div>
+                  <div class="score"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="6"/><circle class="ring" style="--dash:75" cx="32" cy="32" r="26" fill="none" stroke="var(--bad)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 32 32)"/><text x="32" y="37.5" text-anchor="middle" font-size="16" font-weight="700" fill="var(--ink)" font-family="Bricolage Grotesque, sans-serif">46</text></svg>Components</div>
+                </div>
+                <div class="panel">
+                  <h4>Colour tokens <span>24 raw values to 9 tokens</span></h4>
+                  <div class="chips">
+                    <span class="tok"><i style="background:#3B4CFF"></i>primary.500</span>
+                    <span class="tok"><i style="background:#0F98AD"></i>secondary.500</span>
+                    <span class="tok"><i style="background:#0E1430"></i>ink</span>
+                    <span class="tok"><i style="background:#4F5878"></i>muted</span>
+                    <span class="tok"><i style="background:#F2F4FB"></i>surface</span>
+                    <span class="tok"><i style="background:#C2312A"></i>error</span>
+                    <span class="tok"><i style="background:#18794E"></i>success</span>
+                  </div>
+                </div>
+                <div class="panel">
+                  <h4>Issues <span>12 open</span></h4>
+                  <div class="issues">
+                    <div class="issue"><span class="pill p-bad">Conflict</span><span class="ttl">Button radius differs</span><span class="ev">4px vs 999px</span></div>
+                    <div class="issue"><span class="pill p-warn">Drift</span><span class="ttl">Near-duplicate blues</span><span class="ev">ΔE 0.6</span></div>
+                    <div class="issue"><span class="pill p-bad">Conflict</span><span class="ttl">Low-contrast body text</span><span class="ev">2.6 : 1</span></div>
+                    <div class="issue"><span class="pill p-warn">Drift</span><span class="ttl">Off-scale spacing</span><span class="ev">3 values</span></div>
+                    <div class="issue"><span class="pill p-ok">Pass</span><span class="ttl">Body font consistent</span><span class="ev">24 of 24 pages</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </div>
+
+    <div class="marquee m-tokens" data-speed="55" aria-label="Sample tokens Pixelogue extracts">
+      <div class="track">
+        <ul>
+          <li><i style="background:#3B4CFF"></i>primary.500 <span>#3B4CFF</span></li>
+          <li><i style="background:#0F98AD"></i>secondary.500 <span>#0F98AD</span></li>
+          <li><i style="background:#0E1430"></i>ink <span>#0E1430</span></li>
+          <li><i style="background:#A77BFF"></i>violet.400 <span>#A77BFF</span></li>
+          <li><i style="background:#F5C77E"></i>amber.200 <span>#F5C77E</span></li>
+          <li><i style="background:#C2312A"></i>error <span>#C2312A</span></li>
+          <li><i style="background:#18794E"></i>success <span>#18794E</span></li>
+          <li><i style="background:#4F5878"></i>muted <span>#4F5878</span></li>
+          <li><i style="background:#E5E8FF"></i>tint <span>#E5E8FF</span></li>
+        </ul>
+        <ul aria-hidden="true">
+          <li><i style="background:#3B4CFF"></i>primary.500 <span>#3B4CFF</span></li>
+          <li><i style="background:#0F98AD"></i>secondary.500 <span>#0F98AD</span></li>
+          <li><i style="background:#0E1430"></i>ink <span>#0E1430</span></li>
+          <li><i style="background:#A77BFF"></i>violet.400 <span>#A77BFF</span></li>
+          <li><i style="background:#F5C77E"></i>amber.200 <span>#F5C77E</span></li>
+          <li><i style="background:#C2312A"></i>error <span>#C2312A</span></li>
+          <li><i style="background:#18794E"></i>success <span>#18794E</span></li>
+          <li><i style="background:#4F5878"></i>muted <span>#4F5878</span></li>
+          <li><i style="background:#E5E8FF"></i>tint <span>#E5E8FF</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="band" style="padding-top:var(--s-7)">
+      <div class="wrap">
+        <h2 class="h2 rv" style="margin-bottom:var(--s-7)">One scan, four ways in</h2>
+        <div class="teasers">
+          <a class="spot glass rv" href="#features"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.2"/><circle cx="15" cy="10" r="1.2"/><circle cx="12" cy="15" r="1.2"/></svg></span><h3>Features</h3><p>Colour clustering, type and spacing scales, component variants and contrast checks.</p><span class="go">Explore features <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <a class="spot glass rv" href="#how"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h4l3-7 4 14 3-7h2"/></svg></span><h3>How it works</h3><p>Scan, extract, group and export, with proof attached to every finding.</p><span class="go">See the steps <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <a class="spot glass rv" href="#scans"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><h3>Demo scans</h3><p>Five fictional sites, the mess Pixelogue finds in each, and the system it hands back.</p><span class="go">Browse scans <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <a class="spot glass rv" href="#export"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg></span><h3>Export</h3><p>CSS variables, W3C design-token JSON and Tailwind config, ready to paste.</p><span class="go">View the code <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="marquee m-words" data-speed="70" data-dir="-1" aria-label="What Pixelogue reports on">
+      <div class="track">
+        <ul><li>Colours</li><li class="out">Typography</li><li>Spacing</li><li class="out">Components</li><li>Contrast</li><li class="out">Drift</li></ul>
+        <ul aria-hidden="true"><li>Colours</li><li class="out">Typography</li><li>Spacing</li><li class="out">Components</li><li>Contrast</li><li class="out">Drift</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section class="view" data-view="features" aria-label="Features">
+    <div class="wrap">
+      <div class="ph">
+        <h1 class="split">Everything DevTools makes you hunt for, in one report</h1>
+        <p class="lede enter">Pixelogue reads the computed styles of every element on every page, so nothing is missed and nothing is guessed.</p>
+      </div>
+      <div class="bento">
+        <article class="tile glass t-colour enter">
+          <h3>Colour clustering</h3>
+          <p>Shades that look identical to people are merged into one token, measured with ΔE in a perceptual colour space.</p>
+          <div class="cluster">
+            <div class="grp"><span class="raw"><i style="background:#3B4CFF"></i><i style="background:#3C4EFE"></i><i style="background:#3A4BFA"></i><i style="background:#3E50FF"></i></span><span class="tokb" style="background:#3B4CFF">primary</span></div>
+            <div class="grp"><span class="raw"><i style="background:#0F98AD"></i><i style="background:#1099AF"></i><i style="background:#0E96AA"></i></span><span class="tokb" style="background:#0F98AD">secondary</span></div>
+            <div class="grp"><span class="raw"><i style="background:#0E1430"></i><i style="background:#111733"></i><i style="background:#13192F"></i><i style="background:#0E142E"></i></span><span class="tokb" style="background:#0E1430">ink</span></div>
+            <div class="grp"><span class="raw"><i style="background:#F2F4FB;box-shadow:inset 0 0 0 1px #D9DEEC"></i><i style="background:#F1F3FA;box-shadow:inset 0 0 0 1px #D9DEEC"></i><i style="background:#F4F6FC;box-shadow:inset 0 0 0 1px #D9DEEC"></i></span><span class="tokb lt" style="background:#F2F4FB">surface</span></div>
+          </div>
+          <span class="chip-code">ΔE2000 ≤ 2.5, adjustable</span>
+        </article>
+        <article class="tile glass t-contrast enter">
+          <h3>Accessibility checks</h3>
+          <p>Every text and background pair is tested against WCAG 2.2 contrast ratios.</p>
+          <div class="contrast">
+            <div class="cbox" style="color:#A3A9B8"><span class="aa">Aa</span><span><span class="pill p-bad">2.4:1 fails</span></span></div>
+            <div class="cbox" style="color:#4A5270"><span class="aa">Aa</span><span><span class="pill p-ok">7.6:1 passes</span></span></div>
+          </div>
+        </article>
+        <article class="tile glass t-type rv">
+          <h3>Type scale</h3>
+          <p>Font sizes are mapped onto a scale, and off-scale sizes are flagged.</p>
+          <div class="typescale">
+            <div><span style="font:800 1.8rem/1 var(--f-display)">Display</span><code>48/52</code></div>
+            <div><span style="font:700 1.25rem/1 var(--f-display)">Title</span><code>22/28</code></div>
+            <div><span>Body</span><code>16/24</code></div>
+            <div><span class="off">Stray size</span><code class="off">17px on 4 pages</code></div>
+          </div>
+        </article>
+        <article class="tile glass t-space rv">
+          <h3>Spacing scale</h3>
+          <p>Margins, padding and gaps snap to a 4px base, with outliers listed.</p>
+          <div class="bars">
+            <div><code>4px</code><span style="width:8%"></span></div>
+            <div><code>8px</code><span style="width:16%"></span></div>
+            <div class="off"><code>13px</code><span style="width:26%"></span></div>
+            <div><code>16px</code><span style="width:32%"></span></div>
+            <div class="off"><code>22px</code><span style="width:44%"></span></div>
+            <div><code>32px</code><span style="width:64%"></span></div>
+          </div>
+        </article>
+        <article class="tile glass t-comp rv">
+          <h3>Component variants</h3>
+          <p>Buttons, inputs and cards are clustered by style, so one-off variants stand out.</p>
+          <div class="btnrow" aria-label="Four button variants with different corner radii">
+            <span style="border-radius:999px">Buy now</span><span style="border-radius:10px">Buy now</span><span style="border-radius:4px">Buy now</span><span style="border-radius:0">Buy now</span>
+          </div>
+          <span class="chip-code">4 variants found</span>
+        </article>
+        <article class="tile glass t-drift rv">
+          <h3>Cross-page drift</h3>
+          <p>The same component styled differently on different pages is caught automatically.</p>
+          <div class="pages" aria-label="Three page thumbnails; the blog page uses a different button">
+            <div class="pg"><i class="w8"></i><i class="w6"></i><b style="border-radius:999px"></b><code>/</code></div>
+            <div class="pg"><i class="w8"></i><i class="w6"></i><b style="border-radius:999px"></b><code>/pricing</code></div>
+            <div class="pg odd"><i class="w8"></i><i class="w6"></i><b style="border-radius:3px"></b><code>/blog</code></div>
+          </div>
+        </article>
+        <article class="tile glass t-ai rv">
+          <h3>Audit summary, optional AI</h3>
+          <p>Turn on the assistant for a plain-language summary and a fix order. It only reads your scan results.</p>
+          <div class="ai">
+            <p>Your buttons use three corner radii across 14 pages. Standardise them first: it fixes the most visible inconsistency.</p>
+            <ol><li>Adopt <code>radius.pill</code> for all primary buttons</li><li>Merge two near-duplicate blues into <code>primary.500</code></li><li>Darken grey body text to pass 4.5:1</li></ol>
+            <div class="meta"><span class="pill p-ok">Grounded in scan data</span><span class="chip-code">off by default</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW ============ -->
+  <section class="view" data-view="how" aria-label="How it works">
+    <div class="wrap">
+      <div class="ph">
+        <h1 class="split">From a URL to a design system in four steps</h1>
+        <p class="lede enter">No extensions and no setup. Paste the address and Pixelogue does the inspecting for every page.</p>
+      </div>
+      <ol class="steps enter" id="steps">
+        <li class="progress" id="progress" aria-hidden="true"></li>
+        <li class="step"><span class="n" aria-hidden="true">1</span><h3>Scan</h3><p>Real browsers open each page at phone, tablet and desktop widths and wait for fonts to load.</p></li>
+        <li class="step"><span class="n" aria-hidden="true">2</span><h3>Extract</h3><p>Every visible element reports its computed colour, type, spacing, radius and shadow.</p></li>
+        <li class="step"><span class="n" aria-hidden="true">3</span><h3>Group</h3><p>Near-duplicates are merged into named tokens, and inconsistencies are scored.</p></li>
+        <li class="step"><span class="n" aria-hidden="true">4</span><h3>Export</h3><p>Approve the tokens you want and copy them as CSS, JSON or a Tailwind config.</p></li>
+      </ol>
+      <div class="evidence">
+        <div class="rv">
+          <h2 class="h2">Every finding comes with proof</h2>
+          <ul class="checks">
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span><b>The pages it happens on</b>, linked so you can check in seconds.</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span><b>The exact selector and values</b> that disagree with the rest of the site.</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span><b>A suggested fix</b> that points to the token most of the site already uses.</span></li>
+          </ul>
+        </div>
+        <article class="window glass rv" aria-label="Example issue, sample data">
+          <div class="ic-head"><span class="pill p-bad">Conflict</span><h3>Button radius differs across pages</h3><span class="chip-code">3 pages</span></div>
+          <div class="ic-body">
+            <div class="crop"><span>Start free trial</span><small>Crop from /pricing</small></div>
+            <dl class="kv">
+              <dt>Pages</dt><dd><code>/pricing, /signup, /blog</code></dd>
+              <dt>Selector</dt><dd><code>button.cta-primary</code></dd>
+              <dt>Found</dt><dd><code class="found">border-radius: 4px</code></dd>
+              <dt>Expected</dt><dd><code class="want">999px (radius.pill)</code></dd>
+              <dt>Fix</dt><dd>Use <code>radius.pill</code>, used by 38 of 41 buttons.</dd>
+            </dl>
+          </div>
+          <div class="ic-actions"><button class="btn btn-primary" type="button">Apply token</button><button class="btn btn-ghost" type="button">Ignore</button></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCANS ============ -->
+  <section class="view" data-view="scans" aria-label="Demo scans">
+    <div class="wrap">
+      <div class="ph">
+        <h1 class="split">What a scan turns up</h1>
+        <p class="lede enter">Five demo scans of fictional websites show the kind of mess Pixelogue finds, and the system it hands back.</p>
+      </div>
+      <div class="cases">
+        <article class="case feature enter">
+          <p class="kind">Online ceramics shop, 38 pages</p>
+          <h3>Kettle &amp; Kiln</h3>
+          <div class="strip" aria-label="Raw colours found">
+            <i style="background:#7A3E2B"></i><i style="background:#7C402D"></i><i style="background:#8A4A33"></i><i style="background:#B4673F"></i><i style="background:#B66941"></i><i style="background:#C9A27E"></i><i style="background:#CBA481"></i><i style="background:#E9DCCB"></i><i style="background:#EBDECD"></i><i style="background:#F4EEE6"></i><i style="background:#3B3B38"></i><i style="background:#3D3D3A"></i><i style="background:#545450"></i><i style="background:#6E6E69"></i><i style="background:#2F6F5E"></i><i style="background:#317160"></i>
+          </div>
+          <div class="after-strip" aria-label="Colour tokens after grouping">
+            <i style="background:#7A3E2B"></i><i style="background:#B4673F"></i><i style="background:#C9A27E"></i><i style="background:#E9DCCB"></i><i style="background:#F4EEE6"></i><i style="background:#3B3B38"></i><i style="background:#6E6E69"></i><i style="background:#2F6F5E"></i>
+          </div>
+          <div class="figs">
+            <div class="fig"><b class="count">41</b><span>raw colours</span></div>
+            <div class="fig"><b class="count">8</b><span>colour tokens</span></div>
+            <div class="fig"><b class="count">64</b><span>consistency score</span></div>
+          </div>
+          <div class="specimen" aria-label="Type scale found">
+            <div><code>display</code><span style="font:700 2.4rem/1 Georgia, serif">Handmade</span></div>
+            <div><code>title</code><span style="font:600 1.5rem/1 Georgia, serif">Stoneware mugs</span></div>
+            <div><code>body</code><span style="font:400 1rem/1 var(--f-body)">Glazed by hand in small batches</span></div>
+          </div>
+          <p class="finding">Biggest finding: three serif fonts loaded for headings, two of them used on a single page each.</p>
+        </article>
+        <article class="case glass enter">
+          <p class="kind">City transit portal</p><h3>Northline</h3>
+          <div class="strip" aria-hidden="true"><i style="background:#0B5FA5"></i><i style="background:#0C61A8"></i><i style="background:#0E64AC"></i><i style="background:#FFC72C"></i><i style="background:#FFC930"></i><i style="background:#222"></i></div>
+          <div class="figs"><div class="fig"><b class="count">19</b><span>spacing values</span></div><div class="fig"><b class="count">6</b><span>after snapping</span></div></div>
+          <p class="finding">Route cards used 13px, 14px and 15px gaps side by side.</p>
+        </article>
+        <article class="case glass enter">
+          <p class="kind">Fintech dashboard</p><h3>Ledgerly</h3>
+          <div class="strip" aria-hidden="true"><i style="background:#0E7C66"></i><i style="background:#0F7E68"></i><i style="background:#14A085"></i><i style="background:#C2410C"></i><i style="background:#64748B"></i><i style="background:#94A3B8"></i></div>
+          <div class="figs"><div class="fig"><b class="count">12</b><span>contrast failures</span></div><div class="fig"><b class="count">3</b><span>pages affected</span></div></div>
+          <p class="finding">Grey chart labels fell below the 4.5:1 WCAG ratio.</p>
+        </article>
+        <article class="case glass rv">
+          <p class="kind">Restaurant group</p><h3>Saffron Table</h3>
+          <div class="strip" aria-hidden="true"><i style="background:#E0A100"></i><i style="background:#E2A303"></i><i style="background:#8B1E3F"></i><i style="background:#8D2041"></i><i style="background:#1F1A17"></i><i style="background:#FAF6EF"></i></div>
+          <div class="figs"><div class="fig"><b class="count">7</b><span>button styles</span></div><div class="fig"><b class="count">2</b><span>needed</span></div></div>
+          <p class="finding">Each location page had its own booking button.</p>
+        </article>
+        <article class="case glass rv">
+          <p class="kind">Developer docs</p><h3>Orbit Docs</h3>
+          <div class="strip" aria-hidden="true"><i style="background:#5B4BDB"></i><i style="background:#5D4DDD"></i><i style="background:#0F172A"></i><i style="background:#111A2E"></i><i style="background:#E2E8F0"></i><i style="background:#F8FAFC"></i></div>
+          <div class="figs"><div class="fig"><b class="count">9</b><span>font sizes</span></div><div class="fig"><b class="count">5</b><span>in the scale</span></div></div>
+          <p class="finding">Code blocks used four monospace sizes across versions.</p>
+        </article>
+      </div>
+      <p class="disclaim">Demo scans of fictional websites. Names and numbers are illustrative.</p>
+    </div>
+  </section>
+
+  <!-- ============ EXPORT ============ -->
+  <section class="view" data-view="export" aria-label="Export">
+    <div class="wrap">
+      <div class="ph">
+        <h1 class="split">Ship the tokens straight into your codebase</h1>
+        <p class="lede enter">Approve the tokens you want, pick a format and copy. Nothing to configure.</p>
+      </div>
+      <div class="export">
+        <ul class="formats enter">
+          <li><b>CSS</b><span>Custom properties on <code>:root</code>, with a dark block when the site has one.</span></li>
+          <li><b>JSON</b><span>The W3C design-token format, ready for Style Dictionary and other tools.</span></li>
+          <li><b>Tailwind</b><span>A theme for <code>tailwind.config</code>, or <code>@theme</code> for Tailwind v4.</span></li>
+        </ul>
+        <div class="code-card enter">
+          <div class="tabs" role="tablist" aria-label="Export format">
+            <span class="tab-ind" id="tabInd" aria-hidden="true"></span>
+            <button role="tab" id="t-css" aria-selected="true" aria-controls="codePane" tabindex="0">CSS</button>
+            <button role="tab" id="t-json" aria-selected="false" aria-controls="codePane" tabindex="-1">JSON</button>
+            <button role="tab" id="t-tw" aria-selected="false" aria-controls="codePane" tabindex="-1">Tailwind</button>
+            <button class="copy" id="copyBtn" type="button">Copy</button>
+          </div>
+          <pre id="codePane" role="tabpanel" tabindex="0" aria-labelledby="t-css"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SECURITY + FAQ ============ -->
+  <section class="view" data-view="security" aria-label="Security and FAQ">
+    <div class="wrap">
+      <div class="ph">
+        <h1 class="split">Safe to point at any site</h1>
+        <p class="lede enter">Scanning arbitrary URLs is built with guard rails from the start, for your team and for the sites you scan.</p>
+      </div>
+      <div class="secure">
+        <article class="sec glass enter"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/></svg></span><h3>Sandboxed browsers</h3><p>Each scan runs in an isolated container with no access to internal networks.</p></article>
+        <article class="sec glass enter"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></svg></span><h3>Private addresses blocked</h3><p>Local and private IP ranges are refused, and redirects are checked again.</p></article>
+        <article class="sec glass enter"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>Polite crawling</h3><p>Respects robots.txt and rate limits, and identifies itself to the sites it visits.</p></article>
+        <article class="sec glass enter"><span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span><h3>Your data, your call</h3><p>Screenshots expire automatically. AI features are opt-in and see summaries only.</p></article>
+      </div>
+      <div class="faq">
+        <h2 class="h2 rv">Questions developers ask</h2>
+        <div class="qa glass rv">
+          <details open><summary>Does it work on single-page apps?<span class="pm" aria-hidden="true">+</span></summary><p class="ans">Yes. Pages are rendered in a real browser, scrolled and given time to load, so styles added by JavaScript are captured too.</p></details>
+          <details><summary>Can it scan pages behind a login?<span class="pm" aria-hidden="true">+</span></summary><p class="ans">Not in the first release. Authenticated scanning is planned next, using a session you provide.</p></details>
+          <details><summary>Which formats can I export?<span class="pm" aria-hidden="true">+</span></summary><p class="ans">CSS custom properties, W3C design-token JSON, and Tailwind configuration for both v3 and v4.</p></details>
+          <details><summary>Do I need the AI features?<span class="pm" aria-hidden="true">+</span></summary><p class="ans">No. Extraction, grouping and scoring are rule-based and reproducible. The AI summary is optional and off by default.</p></details>
+          <details><summary>Can we self-host it?<span class="pm" aria-hidden="true">+</span></summary><p class="ans">Pixelogue ships as Docker services, so teams can run scans inside their own infrastructure.</p></details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRY ============ -->
+  <section class="view" data-view="try" aria-label="Try the sample scan">
+    <div class="wrap">
+      <div class="ph">
+        <h1 class="split">Paste a URL. Get its design system.</h1>
+        <p class="lede enter">Real-site scanning opens with the first release. Until then, the sample scan shows the kind of tokens you get back.</p>
+      </div>
+      <div class="try glass enter">
+        <form class="scan-form" id="scanForm" novalidate>
+          <label class="field" for="scanUrl">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>
+            <span class="sr">Website URL</span>
+            <input id="scanUrl" name="url" type="url" placeholder="https://your-website.com" autocomplete="url" spellcheck="false">
+          </label>
+          <button class="btn btn-primary magnet" type="submit" id="scanBtn">Run sample scan</button>
+        </form>
+        <ol class="steps-log" id="log" aria-live="polite">
+          <li>Render pages at 375, 768 and 1440px</li>
+          <li>Extract computed styles</li>
+          <li>Group near-duplicates into tokens</li>
+        </ol>
+        <div class="result" id="result" hidden>
+          <p id="resultLine" role="status"></p>
+          <div class="chips" id="resultTokens"></div>
+          <p class="note">Sample result. The tokens shown are example data, not a scan of the address you entered.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section class="band" id="ctaBand" aria-label="Get started">
+  <div class="wrap">
+    <div class="cta rv">
+      <h2><span>Paste a URL.</span><span>Get its design system.</span></h2>
+      <p class="lede">See the kind of tokens Pixelogue hands back, in a sample scan that runs right here.</p>
+      <div class="ctas">
+        <a class="btn btn-primary magnet" href="#try">Try the sample scan</a>
+        <a class="btn btn-ghost" href="#security">Read the FAQ</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee m-stack" data-speed="45" aria-label="Built on">
+  <div class="track">
+    <ul><li>Next.js</li><li>FastAPI</li><li>Playwright</li><li>Python</li><li>Tailwind CSS</li><li>PostgreSQL</li><li>Docker</li><li>TypeScript</li></ul>
+    <ul aria-hidden="true"><li>Next.js</li><li>FastAPI</li><li>Playwright</li><li>Python</li><li>Tailwind CSS</li><li>PostgreSQL</li><li>Docker</li><li>TypeScript</li></ul>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#home"><span class="mark" aria-hidden="true"><i></i><i></i><i class="o"></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i></i></span>Pixelogue</a>
+        <p>Scan any website and turn its scattered styles into a design system your team can ship.</p>
+      </div>
+      <div><h4>Product</h4><ul><li><a href="#features">Features</a></li><li><a href="#how">How it works</a></li><li><a href="#export">Export</a></li></ul></div>
+      <div><h4>Resources</h4><ul><li><a href="#scans">Demo scans</a></li><li><a href="#security">Security and FAQ</a></li><li><a href="#try">Sample scan</a></li></ul></div>
+    </div>
+    <div class="legal"><span>© 2026 Pixelogue</span><span>In active development</span></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const G = window.gsap || null;
+  const M = window.Motion || null;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  /* ---------- pixel gradient field (canvas) ---------- */
+  const cv = $('#pixels'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, DPR = 1, cols = 0, rows = 0, cell = 16, pal = [], pointer = {x: -9999, y: -9999};
+  const hex = h => { h = h.trim().replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  function palette(){
+    const cs = getComputedStyle(document.documentElement);
+    const stops = ['--px-a','--px-b','--px-c','--px-d'].map(v => hex(cs.getPropertyValue(v) || '#5B6CFF'));
+    const mix = (p, q, t) => p.map((v, i) => Math.round(v + (q[i] - v) * t));
+    pal = [];
+    for (let i = 0; i < 12; i++){ const t = i / 11 * 3, k = Math.min(2, Math.floor(t)); pal.push(mix(stops[k], stops[k + 1], t - k)); }
+  }
+  function size(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight; cell = W < 640 ? 14 : 18;
+    cv.width = Math.ceil(W * DPR); cv.height = Math.ceil(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    cols = Math.ceil(W / cell) + 1; rows = Math.ceil(H / cell) + 1;
+  }
+  function frame(t){
+    ctx.clearRect(0, 0, W, H);
+    const s = t * .00018, gap = 3;
+    for (let y = 0; y < rows; y++){
+      const fy = 1 - (y / rows) * .55;
+      for (let x = 0; x < cols; x++){
+        const px = x * cell, py = y * cell;
+        let n = Math.sin(x * .11 + s * 4) * Math.cos(y * .09 - s * 3) + Math.sin((x * .05 + y * .07) + s * 2.2) * .8;
+        const dx = px - pointer.x, dy = py - pointer.y, d = dx * dx + dy * dy;
+        if (d < 52000) n += Math.pow(1 - d / 52000, 1.5) * 1.5;
+        const v = Math.max(0, Math.min(1, (n + 1.8) / 3.6));
+        const a = Math.pow(v, 2.1) * .82 * fy;
+        if (a < .03) continue;
+        const c = pal[Math.min(11, Math.floor(v * 12))];
+        ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(3)})`;
+        ctx.fillRect(px, py, cell - gap, cell - gap);
+      }
+    }
+  }
+  let last = 0, raf = 0;
+  function loop(t){ raf = requestAnimationFrame(loop); pointer.x += (target.x - pointer.x) * .12; pointer.y += (target.y - pointer.y) * .12; if (t - last < 33) return; last = t; frame(t); }
+  palette(); size();
+  if (reduce) frame(4000); else raf = requestAnimationFrame(loop);
+  addEventListener('resize', () => { size(); if (reduce) frame(4000); });
+  const target = {x: -9999, y: -9999};
+  addEventListener('pointermove', e => { target.x = e.clientX; target.y = e.clientY; if (pointer.x < -999){ pointer.x = target.x; pointer.y = target.y; } }, {passive:true});
+  document.addEventListener('visibilitychange', () => { if (reduce) return; if (document.hidden) cancelAnimationFrame(raf); else raf = requestAnimationFrame(loop); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { palette(); if (reduce) frame(4000); });
+  new MutationObserver(() => { palette(); if (reduce) frame(4000); }).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+
+  /* ---------- cursor follower (GSAP quickTo) ---------- */
+  if (!reduce && matchMedia('(pointer: fine)').matches){
+    const ring = $('#cRing'), dot = $('#cDot'), root = document.documentElement;
+    const rx = G ? G.quickTo(ring, 'x', {duration: .45, ease: 'power3.out'}) : v => ring.style.left = v + 'px';
+    const ry = G ? G.quickTo(ring, 'y', {duration: .45, ease: 'power3.out'}) : v => ring.style.top = v + 'px';
+    const dx = G ? G.quickTo(dot, 'x', {duration: .08, ease: 'power2.out'}) : v => dot.style.left = v + 'px';
+    const dy = G ? G.quickTo(dot, 'y', {duration: .08, ease: 'power2.out'}) : v => dot.style.top = v + 'px';
+    addEventListener('pointermove', e => {
+      root.classList.add('cursor-on');
+      rx(e.clientX); ry(e.clientY); dx(e.clientX); dy(e.clientY);
+      const t = e.target;
+      root.classList.toggle('cursor-hover', !!t.closest('a, button, summary, [role="tab"], .spot'));
+      root.classList.toggle('cursor-text', !!t.closest('input, textarea, pre'));
+    }, {passive: true});
+    document.addEventListener('pointerleave', () => root.classList.remove('cursor-on'));
+    addEventListener('pointerdown', () => root.classList.add('cursor-down'));
+    addEventListener('pointerup', () => root.classList.remove('cursor-down'));
+  }
+
+  /* ---------- marquees (GSAP, CSS fallback) ---------- */
+  $$('.marquee').forEach(m => {
+    const track = $('.track', m), speed = +m.dataset.speed || 50, dir = +m.dataset.dir || 1;
+    if (reduce) return;
+    if (G){
+      const tween = dir > 0
+        ? G.fromTo(track, {xPercent: 0}, {xPercent: -50, duration: speed, ease: 'none', repeat: -1, force3D: true})
+        : G.fromTo(track, {xPercent: -50}, {xPercent: 0, duration: speed, ease: 'none', repeat: -1, force3D: true});
+    } else { m.classList.add('css-loop'); m.style.setProperty('--dur', speed + 's'); }
+  });
+
+  /* ---------- hero: scattered styles snap into one token ---------- */
+  const hero = $('#hero');
+  const snap = () => hero.classList.add('snapped');
+  let snapTimer = 0;
+  function playHero(){
+    hero.classList.remove('snapped'); clearTimeout(snapTimer);
+    if (reduce){ snap(); return; }
+    snapTimer = setTimeout(snap, 1100);
+    if (G){
+      G.fromTo('#preview', {rotateX: 14, y: 50, scale: .97}, {rotateX: 0, y: 0, scale: 1, duration: 1.5, ease: 'expo.out', delay: .25});
+    }
+    const rings = $$('.ring');
+    rings.forEach(r => r.style.strokeDasharray = '0 164');
+    setTimeout(() => rings.forEach(r => {
+      const to = +r.style.getPropertyValue('--dash');
+      if (G){ const o = {v: 0}; G.to(o, {v: to, duration: 1.6, ease: 'expo.out', onUpdate: () => r.style.strokeDasharray = o.v + ' 164'}); }
+      else r.style.strokeDasharray = to + ' 164';
+    }), 600);
+  }
+  $('#replay').addEventListener('click', playHero);
+
+  /* ---------- split page titles into masked words ---------- */
+  $$('h1.split').forEach(h => {
+    const words = h.textContent.trim().split(/\s+/);
+    h.setAttribute('aria-label', h.textContent.trim());
+    h.innerHTML = words.map((w, i) => '<span class="word-mask" aria-hidden="true"><span>' + w + '</span></span>' + (/\.$/.test(w) && i < words.length - 1 ? '<br>' : ' ')).join('');
+  });
+
+  /* ---------- Motion: reveals, counters, springy magnets ---------- */
+  function revealIn(view){
+    $$('.rv', view).forEach(el => {
+      if (reduce || !M) return;
+      if (el.getBoundingClientRect().top < innerHeight) return;           // already on screen: stays as it is
+      const stop = M.inView(el, () => {
+        M.animate(el, {opacity: [0, 1], transform: ['translateY(36px)', 'translateY(0px)']}, {duration: .8, ease: [.22, .8, .24, 1]});
+        stop && stop();
+      }, {margin: '0px 0px -10% 0px'});
+    });
+    $$('.count', view).forEach(el => {
+      const to = +el.textContent;
+      if (reduce || !M) return;
+      const run = () => M.animate(0, to, {duration: 1.4, ease: [.22, .8, .24, 1], onUpdate: v => el.textContent = Math.round(v)});
+      const stop = M.inView(el, () => { run(); stop && stop(); });
+    });
+  }
+  if (M && !reduce && matchMedia('(pointer: fine)').matches){
+    $$('.magnet').forEach(b => {
+      b.addEventListener('pointermove', e => {
+        const r = b.getBoundingClientRect();
+        M.animate(b, {transform: `translate(${(e.clientX - r.left - r.width / 2) * .18}px, ${(e.clientY - r.top - r.height / 2) * .28}px)`}, {type: 'spring', stiffness: 300, damping: 18});
+      });
+      b.addEventListener('pointerleave', () => M.animate(b, {transform: 'translate(0px, 0px)'}, {type: 'spring', stiffness: 260, damping: 14}));
+    });
+  }
+
+  /* ---------- spotlight cards ---------- */
+  $$('.spot').forEach(c => c.addEventListener('pointermove', e => {
+    const r = c.getBoundingClientRect();
+    c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }));
+
+  /* ---------- router + page transitions (GSAP) ---------- */
+  const views = $$('.view'), routes = views.map(v => v.dataset.view);
+  const navLinks = $$('[data-route]');
+  const indicator = $('#indicator'), linksEl = $('#links');
+  const cta = $('#ctaBand');
+  let currentView = null, busy = false;
+  const routeFromHash = () => { const h = location.hash.slice(1); return routes.includes(h) ? h : 'home'; };
+
+  function moveIndicator(name, animate){
+    const a = $(`.links a[data-route="${name}"]`);
+    if (!a){ G ? G.to(indicator, {opacity: 0, duration: .25}) : indicator.style.opacity = 0; return; }
+    const lr = linksEl.getBoundingClientRect(), r = a.getBoundingClientRect();
+    const props = {x: r.left - lr.left, width: r.width, opacity: 1};
+    if (G && animate && !reduce) G.to(indicator, {...props, duration: .55, ease: 'expo.out'});
+    else { indicator.style.transform = `translateX(${props.x}px)`; indicator.style.width = props.width + 'px'; indicator.style.opacity = 1; }
+  }
+  function enterAnim(view){
+    if (!G || reduce) return;
+    const words = $$('.word-mask > span', view), blocks = $$('.enter', view);
+    G.fromTo(words, {yPercent: 110}, {yPercent: 0, duration: .9, ease: 'expo.out', stagger: .045});
+    G.fromTo(blocks, {opacity: 0, y: 40}, {opacity: 1, y: 0, duration: .9, ease: 'expo.out', stagger: .07, delay: .15, clearProps: 'transform'});
+    if (view.dataset.view === 'how') G.fromTo('#progress', {scaleX: 0}, {scaleX: 1, duration: 1.6, ease: 'power3.inOut', delay: .4});
+    if (view.dataset.view === 'features') G.fromTo($$('.bars span', view), {scaleX: .1}, {scaleX: 1, duration: 1.1, ease: 'expo.out', stagger: .06, delay: .5});
+  }
+  function show(name, first){
+    const next = views.find(v => v.dataset.view === name);
+    if (!next || next === currentView || busy) return;
+    navLinks.forEach(a => a.dataset.route === name ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
+    moveIndicator(name, !first);
+    $('#mobileMenu').dataset.open = 'false'; $('#menuBtn').setAttribute('aria-expanded', 'false');
+    const swap = () => {
+      views.forEach(v => { v.hidden = v !== next; });
+      cta.hidden = name === 'try';
+      window.scrollTo(0, 0);
+      currentView = next;
+      if (name === 'home') playHero(); else if (!first) enterAnim(next);
+      revealIn(next);
+      if (!first){ const h = $('h1', next); h && h.setAttribute('tabindex', '-1'); h && h.focus({preventScroll: true}); }
+    };
+    if (first || !G || reduce || !currentView){ swap(); return; }
+    busy = true;
+    G.to(currentView, {opacity: 0, y: -24, duration: .35, ease: 'power2.in', onComplete: () => {
+      G.set(currentView, {clearProps: 'opacity,transform'});
+      swap();
+      G.fromTo(next, {opacity: 0}, {opacity: 1, duration: .4, ease: 'power1.out', onComplete: () => { busy = false; G.set(next, {clearProps: 'opacity'}); if (routeFromHash() !== next.dataset.view) show(routeFromHash()); }});
+    }});
+  }
+  addEventListener('hashchange', () => show(routeFromHash()));
+  addEventListener('resize', () => currentView && moveIndicator(currentView.dataset.view, false));
+  document.fonts && document.fonts.ready.then(() => currentView && moveIndicator(currentView.dataset.view, false));
+  show(routeFromHash(), true);
+
+  $('#menuBtn').addEventListener('click', e => {
+    const m = $('#mobileMenu'), open = m.dataset.open !== 'true';
+    m.dataset.open = String(open); e.currentTarget.setAttribute('aria-expanded', String(open));
+    if (open && G && !reduce) G.fromTo($$('a', m), {opacity: 0, y: -8}, {opacity: 1, y: 0, duration: .4, stagger: .03, ease: 'power2.out'});
+  });
+
+  /* ---------- export tabs with sliding indicator ---------- */
+  const code = {
+    't-css': `<span class="c">/* Generated by Pixelogue for example-store.demo */</span>
+<span class="p">:root</span> {
+  <span class="k">--color-primary-500</span>: <span class="v">#3B4CFF</span>;
+  <span class="k">--color-secondary-500</span>: <span class="v">#0F98AD</span>;
+  <span class="k">--color-ink</span>: <span class="v">#0E1430</span>;
+  <span class="k">--color-muted</span>: <span class="v">#4F5878</span>;
+  <span class="k">--color-surface</span>: <span class="v">#F2F4FB</span>;
+  <span class="k">--font-body</span>: <span class="v">"Geist", sans-serif</span>;
+  <span class="k">--text-body</span>: <span class="v">16px</span>;
+  <span class="k">--space-2</span>: <span class="v">8px</span>;
+  <span class="k">--space-4</span>: <span class="v">16px</span>;
+  <span class="k">--radius-pill</span>: <span class="v">999px</span>;
+}`,
+    't-json': `{
+  <span class="k">"color"</span>: {
+    <span class="k">"primary"</span>: {
+      <span class="k">"500"</span>: { <span class="k">"$type"</span>: <span class="v">"color"</span>, <span class="k">"$value"</span>: <span class="v">"#3B4CFF"</span> }
+    },
+    <span class="k">"ink"</span>: { <span class="k">"$type"</span>: <span class="v">"color"</span>, <span class="k">"$value"</span>: <span class="v">"#0E1430"</span> }
+  },
+  <span class="k">"space"</span>: {
+    <span class="k">"4"</span>: { <span class="k">"$type"</span>: <span class="v">"dimension"</span>, <span class="k">"$value"</span>: <span class="v">"16px"</span> }
+  },
+  <span class="k">"radius"</span>: {
+    <span class="k">"pill"</span>: { <span class="k">"$type"</span>: <span class="v">"dimension"</span>, <span class="k">"$value"</span>: <span class="v">"999px"</span> }
+  }
+}`,
+    't-tw': `<span class="c">// tailwind.config.ts</span>
+<span class="p">export default</span> {
+  theme: {
+    extend: {
+      colors: {
+        <span class="k">primary</span>: { <span class="k">500</span>: <span class="v">"#3B4CFF"</span> },
+        <span class="k">secondary</span>: { <span class="k">500</span>: <span class="v">"#0F98AD"</span> },
+        <span class="k">ink</span>: <span class="v">"#0E1430"</span>,
+        <span class="k">muted</span>: <span class="v">"#4F5878"</span>,
+      },
+      spacing: { <span class="k">4</span>: <span class="v">"16px"</span> },
+      borderRadius: { <span class="k">pill</span>: <span class="v">"999px"</span> },
+    },
+  },
+};`
+  };
+  const pane = $('#codePane'), tabs = $$('[role="tab"]'), tabInd = $('#tabInd');
+  function placeTab(t, animate){
+    const pr = t.parentElement.getBoundingClientRect(), r = t.getBoundingClientRect();
+    const x = r.left - pr.left, w = r.width;
+    if (G && animate && !reduce) G.to(tabInd, {x, width: w, duration: .5, ease: 'expo.out'});
+    else { tabInd.style.transform = `translateX(${x}px)`; tabInd.style.width = w + 'px'; }
+  }
+  function showTab(t, animate){
+    tabs.forEach(x => { const on = x === t; x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1; });
+    pane.innerHTML = code[t.id]; pane.setAttribute('aria-labelledby', t.id);
+    placeTab(t, animate);
+    if (animate && G && !reduce) G.fromTo(pane, {opacity: 0, y: 8}, {opacity: 1, y: 0, duration: .45, ease: 'power2.out'});
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => showTab(t, true));
+    t.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      const n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      n.focus(); showTab(n, true);
+    });
+  });
+  showTab(tabs[0], false);
+  addEventListener('hashchange', () => { if (routeFromHash() === 'export') requestAnimationFrame(() => placeTab($('[role="tab"][aria-selected="true"]'), false)); });
+
+  const copyBtn = $('#copyBtn');
+  copyBtn.addEventListener('click', () => {
+    const reset = ms => setTimeout(() => copyBtn.textContent = 'Copy', ms);
+    const fallback = () => {
+      const r = document.createRange(); r.selectNodeContents(pane);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      copyBtn.textContent = 'Selected, press Ctrl+C'; reset(2400);
+    };
+    try { navigator.clipboard.writeText(pane.textContent).then(() => { copyBtn.textContent = 'Copied'; reset(1600); }, fallback); }
+    catch (e) { fallback(); }
+  });
+
+  /* ---------- FAQ: smooth open ---------- */
+  $$('.qa details').forEach(d => d.addEventListener('toggle', () => {
+    if (!d.open || !G || reduce) return;
+    G.fromTo($('.ans', d), {opacity: 0, y: -6}, {opacity: 1, y: 0, duration: .4, ease: 'power2.out'});
+  }));
+
+  /* ---------- sample scan ---------- */
+  const form = $('#scanForm'), log = $$('#log li'), result = $('#result');
+  const sample = [['#3B4CFF','primary.500'],['#0F98AD','secondary.500'],['#0E1430','ink'],['#4F5878','muted'],['#F2F4FB','surface'],['#C2312A','error'],['#18794E','success']];
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const raw = $('#scanUrl').value.trim() || 'https://your-website.com';
+    let host = raw; try { host = new URL(raw.includes('://') ? raw : 'https://' + raw).host; } catch (_) {}
+    result.hidden = true; log.forEach(l => l.className = '');
+    let i = 0;
+    const tick = () => {
+      if (i > 0) log[i - 1].className = 'done';
+      if (i < log.length){ log[i].className = 'run'; i++; setTimeout(tick, reduce ? 0 : 650); return; }
+      $('#resultLine').textContent = 'Sample scan for ' + host + ': 24 values grouped into 7 colour tokens.';
+      $('#resultTokens').innerHTML = sample.map(([h, n]) => '<span class="tok"><i style="background:' + h + '"></i>' + n + '</span>').join('');
+      result.hidden = false;
+      if (G && !reduce) G.fromTo($$('#resultTokens .tok'), {opacity: 0, y: 12, scale: .9}, {opacity: 1, y: 0, scale: 1, duration: .5, stagger: .06, ease: 'back.out(1.6)'});
+    };
+    tick();
+  });
+})();
+</script>
+</body>
+</html>
